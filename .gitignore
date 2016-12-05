@@ -41,3 +41,10 @@ $RECYCLE.BIN/
 Network Trash Folder
 Temporary Items
 .apdisk
+
+# bot config file
+config.ini
+
+# scratch file
+scratch.txt
+*.pyc
