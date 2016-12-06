@@ -36,48 +36,58 @@ def getLastRuneDate():
 def updateItemsTable():
     sql = sqlite3.connect('sql.db')
     cur = sql.cursor()
+    cur.execute('CREATE TABLE IF NOT EXISTS runedate(runedate INTEGER)')
     cur.execute('CREATE TABLE IF NOT EXISTS items(id INTEGER, name TEXT)')
     cur.execute('CREATE INDEX IF NOT EXISTS item_index ON items(id)')
-    rows = []
-    delay = 0
-    for category in CATEGORY_RANGE:
-        while True:
-            try:
-                categoryResponse = requests.get(CATEGORY_URL.format(category=category))
-                time.sleep(delay)
-                categoryJSON = categoryResponse.json()
-            except ValueError:
-                delay += 0.025
-                continue
-            except Exception as e:
-                print(e)
-                continue
-            break
-        for alphaDict in categoryJSON.get('alpha'):
-            numItems = alphaDict.get('items')
-            if numItems > 0:
-                alpha = alphaDict.get('letter').replace('#','%23')
-                itemsRetrieved = 0
-                page = 0
-                while itemsRetrieved < numItems:
-                    page += 1
-                    while True:
-                        try:
-                            itemsResponse = requests.get(ITEMS_URL.format(category=category, alpha=alpha, page=page))
-                            time.sleep(delay)
-                            itemsJSON = itemsResponse.json()
-                        except ValueError:
-                            delay += 0.025
-                            continue
-                        except Exception as e:
-                            print(e)
-                            continue
-                        break
-                    print("retrieved category={category} alpha={alpha} page={page} at delay={delay}".format(category=category, alpha=alpha, page=page, delay=delay))
-                    for itemDict in itemsJSON.get('items'):
-                        rows.append((itemDict.get('id'), itemDict.get('name')))
-                        itemsRetrieved += 1
-                    delay = max(delay - 0.025, 0)
-    cur.executemany('INSERT OR REPLACE INTO items VALUES (?, ?)', rows)
-    sql.commit()
+
+    lastRuneDate = getLastRuneDate()
+    dbRuneDate = cur.execute('SELECT runedate FROM runedate LIMIT 1;').fetchone()
+
+    if dbRuneDate != None and dbRuneDate[0] < lastRuneDate:
+        print('Item Database out of date, updating database from grand exchange api')
+        rows = []
+        delay = 0
+        for category in CATEGORY_RANGE:
+            while True:
+                try:
+                    categoryResponse = requests.get(CATEGORY_URL.format(category=category))
+                    time.sleep(delay)
+                    categoryJSON = categoryResponse.json()
+                except ValueError:
+                    delay += 0.025
+                    continue
+                except Exception as e:
+                    print(e)
+                    continue
+                break
+            for alphaDict in categoryJSON.get('alpha'):
+                numItems = alphaDict.get('items')
+                if numItems > 0:
+                    alpha = alphaDict.get('letter').replace('#','%23')
+                    itemsRetrieved = 0
+                    page = 0
+                    while itemsRetrieved < numItems:
+                        page += 1
+                        while True:
+                            try:
+                                itemsResponse = requests.get(ITEMS_URL.format(category=category, alpha=alpha, page=page))
+                                time.sleep(delay)
+                                itemsJSON = itemsResponse.json()
+                            except ValueError:
+                                delay += 0.025
+                                continue
+                            except Exception as e:
+                                print(e)
+                                continue
+                            break
+                        print("retrieved category={category} alpha={alpha} page={page} at delay={delay}".format(category=category, alpha=alpha, page=page, delay=delay))
+                        for itemDict in itemsJSON.get('items'):
+                            rows.append((itemDict.get('id'), itemDict.get('name')))
+                            itemsRetrieved += 1
+                        delay = max(delay - 0.025, 0)
+        cur.executemany('INSERT OR REPLACE INTO items VALUES (?, ?)', rows)
+        cur.execute('INSERT OR REPLACE INTO runedate VALUES (?)', (lastRuneDate,))
+        sql.commit()
+    else:
+        print('Item Database up to date')
 updateItemsTable()
