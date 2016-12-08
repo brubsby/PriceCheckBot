@@ -25,9 +25,9 @@ DETAIL_URL = "http://services.runescape.com/m=itemdb_rs/api/catalogue/detail.jso
 
 
 def login():
-    r = praw.Reddit(config.APP_USERAGENT)
-    r.set_oauth_app_info(config.APP_ID, config.APP_SECRET, config.APP_URI)
-    r.refresh_access_information(config.APP_REFRESH)
+    r = praw.Reddit(config['CONFIG']['APP_USERAGENT'])
+    r.set_oauth_app_info(config['CONFIG']['APP_ID'], config['CONFIG']['APP_SECRET'], config['CONFIG']['APP_URI'])
+    r.refresh_access_information(config['CONFIG']['APP_REFRESH'])
     return r
 
 def getLastRuneDate():
