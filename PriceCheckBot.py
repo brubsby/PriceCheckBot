@@ -84,7 +84,6 @@ def updateItemsTable():
                         for itemDict in itemsJSON.get('items'):
                             rows.append((itemDict.get('id'), itemDict.get('name')))
                             itemsRetrieved += 1
-                        delay = max(delay - 0.025, 0)
         cur.executemany('INSERT OR REPLACE INTO items VALUES (?, ?)', rows)
         cur.execute('INSERT OR REPLACE INTO runedate VALUES (?)', (lastRuneDate,))
         sql.commit()
